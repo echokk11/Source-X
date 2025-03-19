@@ -762,8 +762,14 @@ bool CClient::Event_CheckWalkBuffer(byte rawdir)
 	{
 		if (m_pChar->m_pPlayer && (m_pChar->m_pPlayer->m_speedMode == 1))
 			iTimeMin = 100;
-		else
-			iTimeMin = 200;
+        else
+        {
+            if (m_pChar->IsStatFlag(STATF_FLY))	//running
+                iTimeMin = 200;
+            else
+                iTimeMin = 400;	//walking
+        }
+			
 	}
 
 	if (!(iTimeDiff > iTimeMin + 350))
@@ -925,7 +931,8 @@ bool CClient::Event_Walk( byte rawdir, byte sequence ) // Player moves
 			// The buffer system Event_CheckWalkBuffer seem more acurate because it permit some ajustment.
 			m_timeNextEventWalk = iCurTime + iDelay;
 		}
-		else if (m_pChar->IsStatFlag(STATF_FLY) && !m_pChar->IsPriv(PRIV_GM) && (g_Cfg.m_iWalkBuffer) && !m_pChar->GetRegion()->_pMultiLink && !Event_CheckWalkBuffer(rawdir) )
+		//else if (m_pChar->IsStatFlag(STATF_FLY) && !m_pChar->IsPriv(PRIV_GM) && (g_Cfg.m_iWalkBuffer) && !m_pChar->GetRegion()->_pMultiLink && !Event_CheckWalkBuffer(rawdir) )
+        else if (!m_pChar->IsPriv(PRIV_GM) && (g_Cfg.m_iWalkBuffer) && !m_pChar->GetRegion()->_pMultiLink && !Event_CheckWalkBuffer(rawdir) )   //whatever running or walking
 				//Run, Not GM , walkbuffer active on ini, not on multi (boat)
 		{
 			new PacketMovementRej(this, sequence);

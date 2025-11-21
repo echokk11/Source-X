@@ -271,7 +271,8 @@ bool CClient::Login_Relay( uint iRelay ) // Relay player to a selected IP
 {
 	ADDTOCALLSTACK("CClient::Login_Relay");
 	// Client wants to be relayed to another server. XCMD_ServerSelect
-	// iRelay = 0 = this local server.
+	// If a [SERVERS] list exists, indexes refer to that list only.
+	// Otherwise, iRelay = 0 = this local server.
 
 	// Sometimes we get an extra 0x80 ???
 	if ( iRelay >= 0x80 )
@@ -284,7 +285,19 @@ bool CClient::Login_Relay( uint iRelay ) // Relay player to a selected IP
 		-- iRelay;
 
 	CServerRef pServ;
-	if ( iRelay <= 0 )
+
+	const bool hasServerList = ( g_Cfg.Server_GetDef(0) != nullptr );
+	if ( hasServerList )
+	{
+		// Map selection directly to the SERVERS list.
+		pServ = g_Cfg.Server_GetDef(iRelay);
+		if ( pServ == nullptr )
+		{
+			DEBUG_ERR(( "%x:Login_Relay BAD index! %u\n", GetSocketID(), iRelay ));
+			return false;
+		}
+	}
+	else if ( iRelay <= 0 )
 	{
 		pServ = &g_Serv;	// we always list ourself first.
 	}

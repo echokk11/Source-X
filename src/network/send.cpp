@@ -3300,7 +3300,13 @@ PacketServerList::PacketServerList(const CClient* target) : PacketSend(XCMD_Serv
 	uint countPosition = getPosition();
 	skip(2);
 
-	writeServerEntry(&g_Serv, ++count, reverseIp);
+	// If a [SERVERS] list exists, only return entries from the list.
+	// Otherwise, fall back to advertising this server (using ServPort binding).
+	const bool hasServerList = (g_Cfg.Server_GetDef(0) != nullptr);
+	if ( !hasServerList )
+	{
+		writeServerEntry(&g_Serv, ++count, reverseIp);
+	}
 
 	//	too many servers in list can crash the client
 #define	MAX_SERVERS_LIST	32

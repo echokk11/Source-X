@@ -4000,12 +4000,9 @@ bool CServerConfig::LoadResourceSection( CScript * pScript, bool fInsertSorted )
 					fReadSelf = true;
 				if ( fReadSelf )
 				{
-					// I can be listed first here. (old way)
-					g_Serv.SetName( pServ->GetName());
-					g_Serv.m_ip = pServ->m_ip;
-					delete pServ;
+					// Keep binding from [SPHERE]; don't override g_Serv with [SERVERS] entry.
+					// Still allow the [SERVERS] entry to be used for the public list.
 					fReadSelf = false;
-					continue;
 				}
 
 				if ( fAddNew )

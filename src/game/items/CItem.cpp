@@ -3787,7 +3787,9 @@ standard_order:
             for (size_t i = 0; i < curEvents; ++i)
             {
                 CResourceLink* pLink = m_OEvents[i].GetRef();
-                if (!pLink || !pLink->HasTrigger(iAction))
+                if (!pLink)
+                    continue;
+                if (!pLink->HasTrigger(iAction) && !pLink->HasTriggerName(pszTrigName))
                     continue;
                 CResourceLock s;
                 if (!pLink->ResourceLock(s))
@@ -3812,8 +3814,8 @@ standard_order:
 		{
 			CResourceLink * pLink = pItemDef->m_TEvents[i].GetRef();
 			ASSERT(pLink);
-			if ( !pLink->HasTrigger(iAction) )
-				continue;
+            if (!pLink->HasTrigger(iAction) && !pLink->HasTriggerName(pszTrigName))
+                continue;
 			CResourceLock s;
 			if ( !pLink->ResourceLock(s) )
 				continue;
@@ -3827,8 +3829,10 @@ standard_order:
 		for ( size_t i = 0; i < g_Cfg.m_iEventsItemLink.size(); ++i )
 		{
 			CResourceLink * pLink = g_Cfg.m_iEventsItemLink[i].GetRef();
-			if ( !pLink || !pLink->HasTrigger(iAction) )
-				continue;
+            if ( !pLink )
+                continue;
+            if ( !pLink->HasTrigger(iAction) && !pLink->HasTriggerName(pszTrigName) )
+                continue;
 			CResourceLock s;
 			if ( !pLink->ResourceLock(s) )
 				continue;

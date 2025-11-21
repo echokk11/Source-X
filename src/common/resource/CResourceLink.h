@@ -7,7 +7,9 @@
 #define _INC_CRESOURCELINK_H
 
 #include "../CScriptContexts.h"
+#include "../sphere_library/CSString.h"
 #include "CResourceDef.h"
+#include <vector>
 
 class CResourceScript;
 
@@ -26,6 +28,8 @@ private:
     CScriptLineContext m_Context;
 
     dword _dwRefInstances;	// How many CResourceRef objects refer to this ?
+    std::vector<CSString> m_sTriggerNames;
+    bool m_fTrackTriggerNames;
 
 public:
     dword m_dwOnTriggers[MAX_TRIGGERS_ARRAY];
@@ -55,6 +59,7 @@ public:
     void ClearTriggers();
     void SetTrigger( int i );
     bool HasTrigger( int i ) const;
+    bool HasTriggerName( lpctstr ptcTrig ) const;
     bool ResourceLock( CResourceLock & s );
 
 public:

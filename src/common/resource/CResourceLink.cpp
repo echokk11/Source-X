@@ -20,6 +20,7 @@ CResourceLink::CResourceLink(const CResourceID& rid, const CVarDefContNum * pDef
 {
     m_pScript = nullptr;
     _dwRefInstances = 0;
+    m_fTrackTriggerNames = false;
     ClearTriggers();
 }
 
@@ -72,6 +73,7 @@ void CResourceLink::ScanSection( RES_TYPE restype )
         default:
             break;
     }
+    m_fTrackTriggerNames = (restype == RES_EVENTS);
     ClearTriggers();
 
     while ( m_pScript->ReadKey(false) )
@@ -83,17 +85,33 @@ void CResourceLink::ScanSection( RES_TYPE restype )
         }
         else if ( m_pScript->IsKeyHead( "ON", 2 ) )
         {
+            m_pScript->ParseKeyLate();
+            lpctstr ptcTrigName = m_pScript->GetArgRaw();
+            if ( m_fTrackTriggerNames && ptcTrigName && *ptcTrigName )
+            {
+                bool fFound = false;
+                for ( const auto& sName : m_sTriggerNames )
+                {
+                    if ( !strcmpi(sName.GetBuffer(), ptcTrigName) )
+                    {
+                        fFound = true;
+                        break;
+                    }
+                }
+                if ( !fFound )
+                    m_sTriggerNames.emplace_back(ptcTrigName);
+            }
+
             int iTrigger;
             if ( iQty )
             {
-                m_pScript->ParseKeyLate();
-                iTrigger = FindTableSorted( m_pScript->GetArgRaw(), ppTable, iQty );
+                iTrigger = FindTableSorted( ptcTrigName, ppTable, iQty );
 
                 if ( iTrigger < 0 )	// unknown triggers ?
                     iTrigger = XTRIG_UNKNOWN;
                 else
                 {
-                    TriglistAdd(m_pScript->GetArgRaw());
+                    TriglistAdd(ptcTrigName);
                     if ( HasTrigger(iTrigger) )
                     {
                         DEBUG_ERR(( "Duplicate trigger '%s' in '%s'\n", ppTable[iTrigger], GetResourceName() ));
@@ -154,13 +172,16 @@ void CResourceLink::CopyTransfer(CResourceLink *pLink)
     m_pScript = pLink->m_pScript;
     m_Context = pLink->m_Context;
     memcpy(m_dwOnTriggers, pLink->m_dwOnTriggers, sizeof(m_dwOnTriggers));
+    m_sTriggerNames = pLink->m_sTriggerNames;
     _dwRefInstances = pLink->_dwRefInstances;
+    m_fTrackTriggerNames = pLink->m_fTrackTriggerNames;
     pLink->_dwRefInstances = 0;	// instance has been transfered.
 }
 
 void CResourceLink::ClearTriggers()
 {
     memset(m_dwOnTriggers, 0, sizeof(m_dwOnTriggers));
+    m_sTriggerNames.clear();
 }
 
 void CResourceLink::SetTrigger(int i)
@@ -196,6 +217,20 @@ bool CResourceLink::HasTrigger(int i) const
             return ((m_dwOnTriggers[j] & flag) != 0);
         }
         i -= 32;
+    }
+    return false;
+}
+
+bool CResourceLink::HasTriggerName(lpctstr ptcTrig) const
+{
+    ADDTOCALLSTACK("CResourceLink::HasTriggerName");
+    if ( ptcTrig == nullptr || ptcTrig[0] == '\0' )
+        return false;
+
+    for ( const auto& sName : m_sTriggerNames )
+    {
+        if ( !strcmpi(sName.GetBuffer(), ptcTrig) )
+            return true;
     }
     return false;
 }

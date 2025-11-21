@@ -134,7 +134,7 @@ void CNetworkManager::acceptNewConnection(void)
 
     DEBUGNETWORK(("Retrieving IP history for '%s'.\n", client_addr.GetAddrStr()));
     const int maxIp = g_Cfg.m_iConnectingMaxIP;
-    const int climaxIp = g_Cfg.m_iClientsMaxIP;
+    const int climaxIp = (client_addr.IsLocalAddr() ? 1024 : g_Cfg.m_iClientsMaxIP);
     HistoryIP& ip = m_ips.getHistoryForIP(client_addr);
     if (ip.m_iTTLSeconds < g_Cfg.m_iNetHistoryTTLSeconds)
     {

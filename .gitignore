@@ -70,3 +70,9 @@ CMakeCache.txt
 /sphereserver*.buildinfo
 /sphereserver*.changes
 /sphereserver*.deb
+
+bin-x86_64
+.cmake
+lib
+*.cmake
+*.filters

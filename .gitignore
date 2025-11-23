@@ -71,6 +71,7 @@ CMakeCache.txt
 /sphereserver*.changes
 /sphereserver*.deb
 
+.DS_Store
 bin-x86_64
 .cmake
 lib

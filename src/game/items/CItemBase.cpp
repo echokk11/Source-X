@@ -1699,6 +1699,12 @@ bool CItemBase::r_LoadVal( CScript &s )
 			m_layer = s.GetArgUCVal();
 			break;
 		case IBC_PILE:
+			if ( !s.HasArgs() )
+				m_Can |= CAN_I_PILE;
+			else if ( s.GetArgVal() )
+				m_Can |= CAN_I_PILE;
+			else
+				m_Can &= ~CAN_I_PILE;
 			break;
 		case IBC_REQSTR:
 			if ( ! IsTypeEquippable())

@@ -1,5 +1,9 @@
 #include "net_datatypes.h"
 #include <cstring>
+#include <string>
+#include <vector>
+#include <locale>
+#include <codecvt>
 
 #ifdef _WIN32
 	#include <winsock2.h>	// this needs to be included after common.h, which sets some defines and then includes windows.h, since winsock2.h needs windows.h
@@ -246,87 +250,64 @@ int CvtSystemToNETUTF16(nachar* pOut, int iSizeOutChars, lpctstr pInp, int iSize
     return iOut;
 }
 
+// 完全替换 net_datatypes.cpp 中的 CvtNETUTF16ToSystem
+// 注意：原本的 static int CvtUTF16ToSystem 可以直接删除，因为不再需要了。
 int CvtNETUTF16ToSystem(tchar* pOut, int iSizeOutBytes, const nachar* pInp, int iSizeInChars)
 {
-    // ARGS:
-    //  iSizeInBytes = space we have (included null char)
-    // RETURN:
-    //  Number of bytes. (not including null)
-    // NOTE:
-    //  This need not be a properly terminated string.
+    // 参数安全检查
+    if (iSizeOutBytes <= 0 || !pOut)
+        return 0; // 返回 0 而不是 -1，保持原逻辑一致性（原代码出错往往返回0或截断）
 
-    if (iSizeInChars > iSizeOutBytes)	// iSizeOutBytes should always be bigger
-        iSizeInChars = iSizeOutBytes;
-    if (iSizeInChars <= 0)
+    if (!pInp || iSizeInChars == 0)
     {
         pOut[0] = 0;
         return 0;
     }
 
-    --iSizeOutBytes;
-
-    int iOut = 0;
-    int iInp = 0;
-
-#ifdef _WIN32
-    const OSVERSIONINFO* posInfo = Sphere_GetOSInfo();
-    if ((posInfo->dwPlatformId == VER_PLATFORM_WIN32_NT) || (posInfo->dwMajorVersion > 4))
+    // 1. 确定输入长度并构建本地序的 UTF-16 字符串
+    // nachar 会自动处理 ntohs (网络字节序 -> 主机字节序)
+    if (iSizeInChars < 0)
     {
-        // Windows 98, 2000 or NT
-
-        // Flip all from network order.
-        wchar szBuffer[1024 * 6];
-        for (; iInp < (int)ARRAY_COUNT(szBuffer) - 1 && iInp < iSizeInChars && pInp[iInp]; ++iInp)
-        {
-            szBuffer[iInp] = pInp[iInp];
-        }
-        szBuffer[iInp] = '\0';
-
-        // Convert to proper UTF8
-        iOut = WideCharToMultiByte(
-            CP_UTF8,        // code page
-            0,              // performance and mapping flags
-            szBuffer,       // address of wide-character string
-            iInp,           // number of characters in string
-            pOut,           // address of buffer for new string
-            iSizeOutBytes,  // size of buffer in bytes
-            nullptr,        // address of default for unmappable characters
-            nullptr         // address of flag set when default char. used
-        );
-        if (iOut < 0)
-        {
-            pOut[0] = 0;	// make sure it's null terminated
-            return 0;
-        }
-    }
-    else
-#endif // _WIN32
-    {
-        // Win95 or linux = just assume its really ASCII
-        for (; iInp < iSizeInChars; ++iInp)
-        {
-            // Flip all from network order.
-            wchar wChar = pInp[iInp];
-            if (!wChar)
-                break;
-
-            if (iOut >= iSizeOutBytes)
-                break;
-            if (wChar >= 0x80)	// needs special UTF8 encoding.
-            {
-                int iOutTmp = CvtUTF16ToSystem(pOut + iOut, iSizeOutBytes - iOut, wChar);
-                if (iOutTmp <= 0)
-                    break;
-                iOut += iOutTmp;
-            }
-            else
-            {
-                pOut[iOut] = static_cast<tchar>(wChar);
-                ++iOut;
-            }
-        }
+        // 寻找 null 结尾
+        iSizeInChars = 0;
+        while (pInp[iSizeInChars] != 0) iSizeInChars++;
     }
 
-    pOut[iOut] = 0;	// make sure it's null terminated
-    return(iOut);
+    std::u16string utf16Str;
+    utf16Str.reserve(iSizeInChars);
+    for (int i = 0; i < iSizeInChars; ++i)
+    {
+        utf16Str.push_back((word)pInp[i]); // 这里的强制转换会触发 nachar 的 operator word()，执行 ntohs
+    }
+
+    try 
+    {
+        // 2. 核心转换：UTF-16 -> UTF-8
+        // std::codecvt_utf8_utf16 负责将 char16_t 序列转换为 char 序列 (UTF-8)
+        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+        
+        // 执行转换
+        std::string utf8Str = converter.to_bytes(utf16Str);
+
+        // 3. 安全拷贝到输出缓冲区
+        size_t copyLen = utf8Str.length();
+        if (copyLen >= (size_t)iSizeOutBytes)
+        {
+            copyLen = iSizeOutBytes - 1; // 截断以保留 null 结尾空间
+        }
+
+        if (copyLen > 0)
+        {
+            memcpy(pOut, utf8Str.data(), copyLen);
+        }
+        
+        pOut[copyLen] = 0; // 确保 null 结尾
+        return (int)copyLen;
+    }
+    catch (...)
+    {
+        // 转换失败保底
+        pOut[0] = 0;
+        return 0;
+    }
 }

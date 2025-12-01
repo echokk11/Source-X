@@ -29,6 +29,23 @@
 /////////////////////////////////////////////////////////////////
 // -CClient stuff.
 
+namespace
+{
+	bool ContainsNonASCII(lpctstr text)
+	{
+		if ( text == nullptr )
+			return false;
+
+		for ( ; *text; ++text )
+		{
+			if ( static_cast<unsigned char>(*text) & 0x80 )
+				return true;
+		}
+
+		return false;
+	}
+}
+
 void CClient::resendBuffs() const
 {
 	// These checks are in addBuff too, but it would be useless to call it so many times
@@ -858,14 +875,20 @@ void CClient::addBarkParse( lpctstr pszText, const CObjBaseTemplate * pSrc, HUE_
             Args[1] = (word)defaultFont;
     }
 
-	if ( Args[2] == 0 )
-		Args[2] = (word)defaultUnicode;
-
     Str_CopyLimitNull(	ptcBarkBuffer, ptcName,	Str_TempLength());
 	Str_ConcatLimitNull(ptcBarkBuffer, pszText, Str_TempLength());
 
+    if ( (Args[2] == 0) && ContainsNonASCII(ptcBarkBuffer) )
+    {
+        // Force unicode when the text includes non-ASCII characters (eg. CJK names/titles) to avoid garbled output.
+        Args[2] = 1;
+    }
+
 	if (mode == TALKMODE_SPELL) //Set TALKMODE_SPELL to TALKMODE_SAY after every color check completed to block spell flood.
 		mode = TALKMODE_SAY;
+
+	if ( Args[2] == 0 )
+		Args[2] = (word)defaultUnicode;
 
 	switch ( Args[2] )
 	{

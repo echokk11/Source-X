@@ -1953,7 +1953,8 @@ void CClient::Event_Talk_Common(lpctstr pszText)	// PC speech
 		int iDist = m_pChar->GetTopDist3D(pChar);
 
 		//Can't see or too far, Can't hear!
-		if (((!m_pChar->CanSeeLOS(pChar)) && (!fIgnoreLOS)) || (iDist > iFullDist))
+		bool bBankerCmd = pChar->m_pNPC && (pChar->m_pNPC->m_Brain == NPCBRAIN_BANKER) && (FindStrWord(pszText, "BANK,BALANCE") > 0);
+		if (((!m_pChar->CanSeeLOS(pChar)) && (!fIgnoreLOS) && (!bBankerCmd)) || (iDist > iFullDist))
 			continue;
 
 		bool bNamed = false;

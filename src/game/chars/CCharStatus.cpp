@@ -968,11 +968,12 @@ lpctstr CChar::GetTradeTitle() const // Paperdoll title for character p (2)
 			return "";	// same as type anyhow.
 
         //auto gReader = g_ExprGlobals.mtEngineLockedReader();
-        lpctstr ptcArticle = g_Cfg.GetDefaultMsg(
-            pCharDef->IsFemale()
-                ? DEFMSG_TRADETITLE_ARTICLE_FEMALE
-                : DEFMSG_TRADETITLE_ARTICLE_MALE);
-        snprintf(pTemp, Str_TempLength(), "%s %s", ptcArticle, pCharDef->GetTradeName());
+        // lpctstr ptcArticle = g_Cfg.GetDefaultMsg(
+        //     pCharDef->IsFemale()
+        //         ? DEFMSG_TRADETITLE_ARTICLE_FEMALE
+        //         : DEFMSG_TRADETITLE_ARTICLE_MALE);
+        // snprintf(pTemp, Str_TempLength(), "%s %s", ptcArticle, pCharDef->GetTradeName());
+		snprintf(pTemp, Str_TempLength(), "(%s)", pCharDef->GetTradeName());
         return pTemp;
     }
 

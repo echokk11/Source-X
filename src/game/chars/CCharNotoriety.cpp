@@ -580,11 +580,13 @@ void CChar::Noto_Kill(CChar * pKill, int iTotalKillers)
     }
     else if (NotoThem < NOTO_GUILD_SAME)
     {
-        // I'm a murderer !
+        // I'm a murderer ! (murder counts only when killing players, but criminal flag still applies)
         if (!IsPriv(PRIV_GM))
         {
+            const bool fVictimIsPlayer = (pKill->m_pPlayer != nullptr);
+
             CScriptTriggerArgsPtr pScriptArgs = CScriptParserBufs::GetCScriptTriggerArgsPtr();
-            pScriptArgs->m_iN1 = m_pPlayer->m_wMurders + 1LL;
+            pScriptArgs->m_iN1 = m_pPlayer->m_wMurders + (fVictimIsPlayer ? 1LL : 0LL);
             pScriptArgs->m_iN2 = true;
             pScriptArgs->m_iN3 = false;
             pScriptArgs->m_pO1 = pKill;
@@ -598,11 +600,14 @@ void CChar::Noto_Kill(CChar * pKill, int iTotalKillers)
 
             if (pScriptArgs->m_iN3 < 1)
             {
-                m_pPlayer->m_wMurders = (word)(pScriptArgs->m_iN1);
+                if (fVictimIsPlayer)
+                    m_pPlayer->m_wMurders = (word)(pScriptArgs->m_iN1);
+
                 if (pScriptArgs->m_iN2)
                     Noto_Criminal();
 
-                Noto_Murder();
+                if (fVictimIsPlayer)
+                    Noto_Murder();
             }
             NotoSave_Update();
         }

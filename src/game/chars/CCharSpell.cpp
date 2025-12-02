@@ -2170,8 +2170,10 @@ void CChar::Spell_Field(CPointMap pntTarg, ITEMID_TYPE idEW, ITEMID_TYPE idNS, u
 	const CSpellDef * pSpellDef = g_Cfg.GetSpellDef(m_atMagery.m_iSpell);
 	ASSERT(pSpellDef);
 
-	if ( m_pArea && m_pArea->IsGuarded() && pSpellDef->IsSpellType(SPELLFLAG_HARM) )
-		Noto_Criminal();
+	// Criminal flag is applied when the field actually damages a character (handled in OnSpellEffect)
+	// Don't flag as criminal just for casting the field spell on empty ground
+	// if ( m_pArea && m_pArea->IsGuarded() && pSpellDef->IsSpellType(SPELLFLAG_HARM) )
+	// 	Noto_Criminal();
 
 	// get the dir of the field.
 	int dx = abs( pntTarg.m_x - GetTopPoint().m_x );
@@ -3776,6 +3778,13 @@ bool CChar::OnSpellEffect( SPELL_TYPE spell, CChar * pCharSrc, int iSkillLevel, 
 
 		if ( !OnAttackedBy(pCharSrc, false, !pSpellDef->IsSpellType(SPELLFLAG_FIELD)) && !fReflecting )
 			return false;
+
+		if ( pCharSrc && (pCharSrc != this) && !pCharSrc->IsPriv(PRIV_GM) && !pCharSrc->IsStatFlag(STATF_CRIMINAL) )
+		{
+			const NOTO_TYPE notoToSource = Noto_GetFlag(pCharSrc, false);
+			if ( notoToSource < NOTO_GUILD_SAME )
+				pCharSrc->Noto_Criminal(this);
+		}
 
 		// Check if the spell can be reflected
 		if (pCharSrc && (pCharSrc != this) )		// only spells with direct target can be reflected

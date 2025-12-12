@@ -90,65 +90,6 @@ static int CvtSystemToUTF16(wchar& wChar, lpctstr pInp, int iSizeInBytes)
     return iBytes;
 }
 
-static int CvtUTF16ToSystem(tchar* pOut, int iSizeOutBytes, wchar wChar)
-{
-    // Convert a single unicode char to system string.
-    // RETURN: The length < iSizeOutBytes
-
-    // bytes bits representation
-    // 1 7	0bbbbbbb
-    // 2 11 110bbbbb 10bbbbbb
-    // 3 16 1110bbbb 10bbbbbb 10bbbbbb
-    // 4 21 11110bbb 10bbbbbb 10bbbbbb 10bbbbbb
-
-    ASSERT(wChar >= 0x80);	// needs special UTF8 encoding.
-
-    int iBytes;
-    int iStartBits;
-
-    if (wChar < (1 << 11))
-    {
-        iBytes = 2;
-        iStartBits = 5;
-    }
-    else if constexpr (sizeof(wchar) > 16u)
-    {
-        if (wChar < (1 << 16))
-        {
-            iBytes = 3;
-            iStartBits = 4;
-        }
-    }
-    else if constexpr (sizeof(wchar) > 21u)
-    {
-        if (wChar < (1 << 21))
-        {
-            iBytes = 4;
-            iStartBits = 3;
-        }
-
-    }
-    else
-    {
-        return -1;	// not valid UNICODE char.
-    }
-
-    if (iBytes > iSizeOutBytes)	// not big enough to hold it.
-        return 0;
-
-    int iOut = iBytes - 1;
-    for (; iOut > 0; --iOut)
-    {
-        pOut[iOut] = 0x80 | (wChar & ((1 << 6) - 1));
-        wChar >>= 6;
-    }
-
-    ASSERT(wChar < (1 << iStartBits));
-    pOut[0] = static_cast<tchar>((0xfe << iStartBits) | wChar);
-
-    return iBytes;
-}
-
 int CvtSystemToNETUTF16(nachar* pOut, int iSizeOutChars, lpctstr pInp, int iSizeInBytes)
 {
     //
@@ -250,8 +191,6 @@ int CvtSystemToNETUTF16(nachar* pOut, int iSizeOutChars, lpctstr pInp, int iSize
     return iOut;
 }
 
-// 完全替换 net_datatypes.cpp 中的 CvtNETUTF16ToSystem
-// 注意：原本的 static int CvtUTF16ToSystem 可以直接删除，因为不再需要了。
 int CvtNETUTF16ToSystem(tchar* pOut, int iSizeOutBytes, const nachar* pInp, int iSizeInChars)
 {
     // 参数安全检查

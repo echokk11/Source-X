@@ -2,21 +2,17 @@ name: MacOS ARM
 
 on:
   push:
-#    branches:
-#      - 'master'
-#      - 'main'
-#      - 'dev'
-      paths-ignore:
-        - '.gitignore'
-        - '.gitattributes'
-        - '**.txt'
-        - '**.md'
-        - '**.rc'
+    branches:
+      - 'openuo'
+    paths-ignore:
+      - '.gitignore'
+      - '.gitattributes'
+      - '**.txt'
+      - '**.md'
+      - '**.rc'
   pull_request:
     branches:
-      - 'master'
-      - 'main'
-      - 'dev'
+      - 'openuo'
 
 jobs:
   macos-arm64:
@@ -65,7 +61,7 @@ jobs:
 
     # Upload artifact linked to the workflow run - only if the run is for a pull request, or for selected branches
     - name: Upload artifact
-      if: contains(fromJson('["master", "main", "dev"]'), github.ref_name) || ${{ github.event_name == 'pull_request' }}
+      if: ${{ contains(fromJson('["openuo"]'), github.ref_name) || github.event_name == 'pull_request' }}
       uses: actions/upload-artifact@v4
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,10 +73,10 @@ jobs:
 
   upload_github_release:
     needs: macos-arm64   # Upload artifact linked to GitHub RELEASE we are creating - only if the run is for a pull request, or for selected branches
-    if: contains(fromJson('["master", "main"]'), github.ref_name)
+    if: contains(fromJson('["master", "main", "openuo"]'), github.ref_name)
     permissions:
-      contents: read
-      actions: write
+      contents: write
+      actions: read
 
     runs-on: ubuntu-latest
     steps:
@@ -100,23 +96,3 @@ jobs:
           tag_name: Nightly
           prerelease: true
           files: SphereSvrX-osx-arm64-nightly.zip
-
-
-  upload_selfhost_release:
-    needs: macos-arm64
-    if: contains(fromJson('["master", "main"]'), github.ref_name) && (github.repository == 'SphereServer/Source-X')
-    permissions:
-      contents: write
-      actions: read
-
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download builds
-        uses: actions/download-artifact@v5
-        with:
-          name: Build-osx-arm64
-          merge-multiple: true
-          run-id: ${{ github.run_id }}
-      - name: Push release
-        run: |
-          curl -sST "{SphereSvrX-osx-arm64-nightly.zip}" -u ${{secrets.UP_USER}}:${{secrets.UP_PASS}} ${{secrets.UP_WHERE}}

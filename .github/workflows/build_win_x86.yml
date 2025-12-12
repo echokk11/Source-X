@@ -2,11 +2,11 @@ name: Windows x86
 
 on:
   push:
-#    branches:
-#      - 'master'
-#      - 'main'
-#      - 'dev'
-      paths-ignore:
+    branches:
+      - 'master'
+      - 'main'
+      - 'dev'
+    paths-ignore:
         - '.gitignore'
         - '.gitattributes'
         - '**.txt'
@@ -80,22 +80,3 @@ jobs:
           tag_name: Nightly
           prerelease: true
           files: SphereSvrX-win-x86-nightly.zip
-
-  upload_selfhost_release:
-    needs: windows-x86
-    if: contains(fromJson('["master", "main"]'), github.ref_name) && (github.repository == 'SphereServer/Source-X')
-    permissions:
-      contents: write
-      actions: read
-
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download builds
-        uses: actions/download-artifact@v5
-        with:
-          name: Build-win-x86
-          merge-multiple: true
-          run-id: ${{ github.run_id }}
-      - name: Push release
-        run: |
-          curl -sST "{SphereSvrX-win-x86-nightly.zip}" -u ${{secrets.UP_USER}}:${{secrets.UP_PASS}} ${{secrets.UP_WHERE}}

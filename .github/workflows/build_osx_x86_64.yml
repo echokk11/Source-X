@@ -2,11 +2,11 @@ name: MacOS x86_64
 
 on:
   push:
-#    branches:
-#      - 'master'
-#      - 'main'
-#      - 'dev'
-      paths-ignore:
+    branches:
+      - 'master'
+      - 'main'
+      - 'dev'
+    paths-ignore:
         - '.gitignore'
         - '.gitattributes'
         - '**.txt'
@@ -99,22 +99,3 @@ jobs:
           tag_name: Nightly
           prerelease: true
           files: SphereSvrX-osx-x86_64-nightly.zip
-
-  upload_selfhost_release:
-    needs: macos-x86_64
-    if: contains(fromJson('["master", "main"]'), github.ref_name) && (github.repository == 'SphereServer/Source-X')
-    permissions:
-      contents: write
-      actions: read
-
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download builds
-        uses: actions/download-artifact@v5
-        with:
-          name: Build-osx-x86_64
-          merge-multiple: true
-          run-id: ${{ github.run_id }}
-      - name: Push release
-        run: |
-          curl -sST "{SphereSvrX-osx-x86_64-nightly.zip}" -u ${{secrets.UP_USER}}:${{secrets.UP_PASS}} ${{secrets.UP_WHERE}}
